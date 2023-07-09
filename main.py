@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 import requests
 
 load_dotenv()
-BOT_FRAMEWORK_URL = os.getenv('DISCORD_TOKEN')
+BOT_FRAMEWORK_URL = os.getenv('BOT_FRAMEWORK_URL')
 TOKEN = os.getenv('DISCORD_TOKEN')
 
 class MyClient(discord.Client):
@@ -20,13 +20,26 @@ class MyClient(discord.Client):
 
         response = requests.post(BOT_FRAMEWORK_URL, json={
             "username": str(message.author.id),
-            "message": message.content.strip()
+            "message": message.content.strip(),
+            "guild": message.guild.id
         })
-
+        
+        print(response.text)
         output = response.json()
-        if (output["message"] != ""):
-            await message.reply(output["message"], mention_author=True)
 
+        if output["type"] == "embed":
+            # fields - title, summary, heading, message
+            embedVar = discord.Embed(title=output["title"], description=output["summary"], color=0x00ff00)
+            for k,v in output["fields"].items():
+                embedVar.add_field(name=k, value=v, inline=False)
+            await message.reply(embed=embedVar)
+        elif output["type"] == "image":
+            # fields - image
+            await message.reply(output["image"])
+        elif output["type"] == "text":
+            await message.reply(output["message"], mention_author=True)
+        else:
+            pass
 
 intents = discord.Intents.default()
 intents.message_content = True
