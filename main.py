@@ -21,30 +21,32 @@ class MyClient(discord.Client):
         response = requests.post(BOT_FRAMEWORK_URL, json={
             "username": str(message.author.id),
             "message": message.content.strip(),
-            "guild": message.guild.id
+            "guild": str(message.guild.id)
         })
         
-        print(response.text)
         output = response.json()
 
-        if output["type"] == "embed":
-            # fields - title, summary, heading, message
-            embedVar = discord.Embed(title=output["title"], description=output["summary"], color=0x00ff00)
-            for k,v in output["fields"].items():
-                embedVar.add_field(name=k, value=v, inline=False)
-            await message.reply(embed=embedVar)
-        elif output["type"] == "image":
-            # fields - image
-            await message.reply(output["image"])
-        elif output["type"] == "text":
-            await message.reply(output["message"], mention_author=True)
-        else:
-            pass
+        try:
+            if output["type"] == "embed":
+                embedVar = discord.Embed(title=output["title"], description=output["summary"], color=0x00ff00)
+                for k,v in output["fields"].items():
+                    embedVar.add_field(name=k, value=v, inline=False)
+                await message.reply(embed=embedVar)
+            elif output["type"] == "image":
+                await message.reply(output["image"])
+            elif output["type"] == "text":
+                await message.reply(output["message"], mention_author=True)
+            elif output["type"] == "error":
+                embedVar = discord.Embed(title="Error", description=output["error"], color=0xff0000)
+                await message.reply(embed=embedVar)
+            else:
+                pass
+        except e:
+            print(response.text)
+            raise e
 
 intents = discord.Intents.default()
 intents.message_content = True
 
 client = MyClient(intents=intents)
-
-
 client.run(TOKEN)
